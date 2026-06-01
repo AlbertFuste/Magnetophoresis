@@ -1,0 +1,65 @@
+processors      2 2 2
+
+units		lj
+atom_style	hybrid bond sphere dipole
+dimension	3
+boundary        p p p
+
+
+region		box block 0 30 0 30 0 30
+create_box	1 box 
+create_atoms	1 random 300 12345 box overlap 1 maxtry 500
+
+
+group           group1 type 1
+
+
+set             group group1 diameter 1
+
+
+mass		1 1
+set             group group1 mass 1
+
+velocity	all create 1 87287 mom no
+
+pair_style	lj/cut/dipole/cut 1 1
+pair_coeff	* * 3 1 1 10
+
+timestep	0.0005
+
+neighbor	1 bin
+neigh_modify	delay 0 check yes
+
+
+
+fix             force all addforce 0.0 0.0 0.333
+
+set		group all dipole 0.0 0.0 2.0
+
+
+fix fluid       all lb/fluid 1 2.20 0.0166 dx 0.5 stencil 3 noise 1 48279
+
+
+fix visc        all lb/viscous
+
+
+fix nve         all nve
+
+
+fix mom         all lb/momentum 1
+
+
+compute         vz all reduce ave vz
+
+fix             vz_suau all ave/time 1 1000 1000 c_vz file vz_temporal.dat
+
+
+thermo_style	custom atoms step temp pe ke etotal f_fluid f_fluid[1]
+thermo		100
+
+
+dump		1 all custom 1000 grad.dipole id type x y z diameter
+
+
+
+run             100000000 
